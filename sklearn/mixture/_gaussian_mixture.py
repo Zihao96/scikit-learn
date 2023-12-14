@@ -275,11 +275,11 @@ def _estimate_gaussian_covariances_ellipsoidal(resp, X, nk, means, reg_covar):
 
     Returns
     -------
-    variances : array, shape (n_components, n_features / 2)
+    variances : array, shape (n_components, n_features)
         The variance values of each components.
     """
     variances = _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar)
-    return (variances[:, 0::2] + variances[:, 1::2]) / 2
+    return np.repeat((variances[:, 0::2] + variances[:, 1::2]) / 2, 2, axis=1)
 
 
 def _estimate_gaussian_parameters(X, resp, reg_covar, covariance_type):
@@ -388,8 +388,9 @@ def _compute_log_det_cholesky(matrix_chol, covariance_type, n_features):
         'tied' : shape of (n_features, n_features)
         'diag' : shape of (n_components, n_features)
         'spherical' : shape of (n_components,)
+        'ellipsoidal': shape of (n_components, n_freatures)
 
-    covariance_type : {'full', 'tied', 'diag', 'spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'spherical', 'ellipsoidal'}
 
     n_features : int
         Number of features.
@@ -408,7 +409,7 @@ def _compute_log_det_cholesky(matrix_chol, covariance_type, n_features):
     elif covariance_type == "tied":
         log_det_chol = np.sum(np.log(np.diag(matrix_chol)))
 
-    elif covariance_type == "diag":
+    elif covariance_type in ("diag", "ellipsoidal"):
         log_det_chol = np.sum(np.log(matrix_chol), axis=1)
 
     else:
@@ -432,8 +433,9 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type):
         'tied' : shape of (n_features, n_features)
         'diag' : shape of (n_components, n_features)
         'spherical' : shape of (n_components,)
+        'ellipsoidal': shape of (n_components, n_freatures)
 
-    covariance_type : {'full', 'tied', 'diag', 'spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'spherical', 'ellipsoidal'}
 
     Returns
     -------
@@ -459,7 +461,7 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type):
             y = np.dot(X, precisions_chol) - np.dot(mu, precisions_chol)
             log_prob[:, k] = np.sum(np.square(y), axis=1)
 
-    elif covariance_type == "diag":
+    elif covariance_type in ("diag", "ellipsoidal"):
         precisions = precisions_chol**2
         log_prob = (
             np.sum((means**2 * precisions), 1)
