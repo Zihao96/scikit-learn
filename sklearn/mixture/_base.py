@@ -233,7 +233,6 @@ class BaseMixture(DensityMixin, BaseEstimator, metaclass=ABCMeta):
 
         random_state = check_random_state(self.random_state)
 
-        n_samples, _ = X.shape
         for init in range(n_init):
             self._print_verbose_msg_init_beg(init)
 

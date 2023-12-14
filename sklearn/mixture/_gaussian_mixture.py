@@ -258,6 +258,30 @@ def _estimate_gaussian_covariances_spherical(resp, X, nk, means, reg_covar):
     return _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar).mean(1)
 
 
+def _estimate_gaussian_covariances_ellipsoidal(resp, X, nk, means, reg_covar):
+    """Estimate the ellipsoidal variance values.
+
+    Parameters
+    ----------
+    responsibilities : array-like of shape (n_samples, n_components)
+
+    X : array-like of shape (n_samples, n_features)
+
+    nk : array-like of shape (n_components,)
+
+    means : array-like of shape (n_components, n_features)
+
+    reg_covar : float
+
+    Returns
+    -------
+    variances : array, shape (n_components, n_features / 2)
+        The variance values of each components.
+    """
+    variances = _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar)
+    return (variances[:, 0::2] + variances[:, 1::2]) / 2
+
+
 def _estimate_gaussian_parameters(X, resp, reg_covar, covariance_type):
     """Estimate the Gaussian distribution parameters.
 
@@ -294,6 +318,7 @@ def _estimate_gaussian_parameters(X, resp, reg_covar, covariance_type):
         "tied": _estimate_gaussian_covariances_tied,
         "diag": _estimate_gaussian_covariances_diag,
         "spherical": _estimate_gaussian_covariances_spherical,
+        "ellipsoidal": _estimate_gaussian_covariances_ellipsoidal
     }[covariance_type](resp, X, nk, means, reg_covar)
     return nk, means, covariances
 
@@ -307,7 +332,7 @@ def _compute_precision_cholesky(covariances, covariance_type):
         The covariance matrix of the current components.
         The shape depends of the covariance_type.
 
-    covariance_type : {'full', 'tied', 'diag', 'spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'spherical', 'ellipsoidal'}
         The type of precision matrices.
 
     Returns
@@ -639,7 +664,7 @@ class GaussianMixture(BaseMixture):
 
     _parameter_constraints: dict = {
         **BaseMixture._parameter_constraints,
-        "covariance_type": [StrOptions({"full", "tied", "diag", "spherical"})],
+        "covariance_type": [StrOptions({"full", "tied", "diag", "spherical", "ellipsoidal"})],
         "weights_init": ["array-like", None],
         "means_init": ["array-like", None],
         "precisions_init": ["array-like", None],
