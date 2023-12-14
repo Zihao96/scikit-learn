@@ -108,6 +108,7 @@ def _check_precisions(precisions, covariance_type, n_components, n_features):
         'tied' : shape of (n_features, n_features)
         'diag' : shape of (n_components, n_features)
         'spherical' : shape of (n_components,)
+        'ellipsoidal': shape of (n_componenets, n_features)
 
     covariance_type : str
 
@@ -133,6 +134,7 @@ def _check_precisions(precisions, covariance_type, n_components, n_features):
         "tied": (n_features, n_features),
         "diag": (n_components, n_features),
         "spherical": (n_components,),
+        "ellipsoidal": (n_components, n_features),
     }
     _check_shape(
         precisions, precisions_shape[covariance_type], "%s precision" % covariance_type
@@ -143,6 +145,7 @@ def _check_precisions(precisions, covariance_type, n_components, n_features):
         "tied": _check_precision_matrix,
         "diag": _check_precision_positivity,
         "spherical": _check_precision_positivity,
+        "ellipsoidal": _check_precision_positivity,
     }
     _check_precisions[covariance_type](precisions, covariance_type)
     return precisions
@@ -296,7 +299,7 @@ def _estimate_gaussian_parameters(X, resp, reg_covar, covariance_type):
     reg_covar : float
         The regularization added to the diagonal of the covariance matrices.
 
-    covariance_type : {'full', 'tied', 'diag', 'spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'spherical', 'ellipsoidal'}
         The type of precision matrices.
 
     Returns
@@ -497,7 +500,7 @@ class GaussianMixture(BaseMixture):
     n_components : int, default=1
         The number of mixture components.
 
-    covariance_type : {'full', 'tied', 'diag', 'spherical'}, default='full'
+    covariance_type : {'full', 'tied', 'diag', 'spherical', 'ellipsoidal'}, default='full'
         String describing the type of covariance parameters to use.
         Must be one of:
 
@@ -505,6 +508,7 @@ class GaussianMixture(BaseMixture):
         - 'tied': all components share the same general covariance matrix.
         - 'diag': each component has its own diagonal covariance matrix.
         - 'spherical': each component has its own single variance.
+        - 'ellipsoidal': same as 'diag' but every two covariances in diagonal must be same.
 
     tol : float, default=1e-3
         The convergence threshold. EM iterations will stop when the
@@ -594,6 +598,7 @@ class GaussianMixture(BaseMixture):
 
             (n_components,)                        if 'spherical',
             (n_features, n_features)               if 'tied',
+            (n_components, n_features)             if 'ellipsoidal',
             (n_components, n_features)             if 'diag',
             (n_components, n_features, n_features) if 'full'
 
@@ -608,6 +613,7 @@ class GaussianMixture(BaseMixture):
 
             (n_components,)                        if 'spherical',
             (n_features, n_features)               if 'tied',
+            (n_components, n_features)             if 'ellipsoidal',
             (n_components, n_features)             if 'diag',
             (n_components, n_features, n_features) if 'full'
 
@@ -622,6 +628,7 @@ class GaussianMixture(BaseMixture):
 
             (n_components,)                        if 'spherical',
             (n_features, n_features)               if 'tied',
+            (n_components, n_features)             if 'ellipsoidal',
             (n_components, n_features)             if 'diag',
             (n_components, n_features, n_features) if 'full'
 
@@ -832,7 +839,7 @@ class GaussianMixture(BaseMixture):
         _, n_features = self.means_.shape
         if self.covariance_type == "full":
             cov_params = self.n_components * n_features * (n_features + 1) / 2.0
-        elif self.covariance_type == "diag":
+        elif self.covariance_type in ("diag", "ellipsoidal"):
             cov_params = self.n_components * n_features
         elif self.covariance_type == "tied":
             cov_params = n_features * (n_features + 1) / 2.0
